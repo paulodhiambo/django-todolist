@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>News App</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+
+<div>
+    {% include 'lists/sidebar.html' %}
+</div>
+<div class="container" id="articles-container">
+    {% for value in data %}
+        <div class="card mb-3 box" style="max-width: 640px; margin:auto;">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card-body">
+                        <h5 class="card-title"><a href="{{ value.url }}" target="_blanck">{{ value.title }}</a></h5>
+                        <p class="card-text">{{ value.description }}</p>
+                        <p class="card-text"><small class="text-muted">{{ value.publishedat }}</small></p>
+                    </div>
+                </div>
+
+                <div class="col-md-4 img-box">
+                    <img src="{{ value.image }}" class="card-img" alt="..." height="100%">
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+<h1 id="loading">Loading....</h1>
+
+</body>
+<style>
+    #articles-container {
+        margin-left: 250px;
+    }
+
+    .box {
+        transition-property: box-shadow, transform;
+        transition-duration: 1s;
+    }
+
+    .box:hover {
+        /* box-shadow: 2px 2px 5px #8080807a; */
+        box-shadow: 1px 2px 8px 0px #00bcffb0;
+        transform: translateY(-9px);
+    }
+
+    .img-box {
+        padding: 20px;
+    }
+
+    .img-box img {
+        border-radius: 15px;
+        object-fit: cover;
+    }
+
+    #loading {
+        text-align: center;
+        display: none;
+    }
+</style>
+<script>
+
+    $(document).ready(function () {
+        console.log("ready!");
+        el = document.getElementsByClassName("text-muted")
+        for (i = 0; i < el.length; i++) {
+            t = document.getElementsByClassName("text-muted")[i].innerText
+            var d = new Date(t)
+            document.getElementsByClassName("text-muted")[i].innerText = d.toDateString()
+        }
+    });
+    var page = 2;
+    var window_scroll = true;
+    var search = "{{ search }}";
+
+    window.addEventListener('scroll', function (e) {
+        // scroll check
+        console.log("scroll check...")
+        if (window_scroll) {
+            if ((window.innerHeight + window.scrollY) >= (document.body.scrollHeight - 200)) {
+                window_scroll = false;
+                document.getElementById("loading").style.display = "block";
+                $.ajax({
+                    url: '/next?page=' + page + '&search=' + search,
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data["success"]) {
+                            articles = data["data"]
+                            articles_html = ''
+                            for (i = 0; i < articles.length; i++) {
+                                articles_html += ' \
+                            <div class="card mb-3 box" style="max-width: 640px; margin:auto;">\
+                                <div class="row">\
+                                    <div class="col-md-8">\
+                                        <div class="card-body">\
+                                            <h5 class="card-title"><a href="' + articles[i]["url"] + '" target="_blanck">' + articles[i]["title"] + '</a></h5>\
+                                            <p class="card-text">' + articles[i]["description"] + '</p>\
+                                            <p class="card-text"><small class="text-muted">' + articles[i]["publishedat"] + '</small></p>\
+                                        </div>\
+                                    </div>\
+                                            \
+                                    <div class="col-md-4 img-box">\
+                                        <img src="' + articles[i]["image"] + '" class="card-img" alt="..." height="100%">\
+                                    </div>\
+                                </div>\
+                            </div>\
+                            '
+                            }
+                            $("#articles-container").append(articles_html);
+                            page += 1
+                            window_scroll = true;
+                            document.getElementById("loading").style.display = "none";
+                        } else {
+                            console.log("Failed")
+                            window_scroll = true;
+                            document.getElementById("loading").style.display = "none";
+                        }
+                    }
+                });
+            }
+        }
+    })
+
+
+</script>
+</html>

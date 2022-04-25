@@ -1,22 +1,29 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: django-app
+  name: django-deployment
   labels:
-    app: django
+    app: django-app
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: django
+      app: django-app
   template:
     metadata:
       labels:
-        app: django
+        app: django-app
     spec:
       containers:
-        - image: paulodhiambo/django_dtodo:latest
-          name: django
-          ports:
-            - containerPort: 8000
-              name: gunicorn
+      - name: django-app
+        image: paulodhiambo/django_dtodo:v2
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: ".5Gi"
+            cpu: "500m"
+          limits:
+            memory: ".5Gi"
+            cpu: "500m"
+        ports:
+        - containerPort: 80
