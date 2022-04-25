@@ -1,16 +1,11 @@
 import requests
-from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import render
 
-from lists.forms import TodoForm, TodoListForm
-from lists.models import Todo, TodoList
 from todolist import settings
 
 temp_img = "https://images.pexels.com/photos/3225524/pexels-photo-3225524.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500"
 
-
-#  https://www.w3schools.com/code/tryit.asp?filename=GJ8R42LMFRLP
 
 def index(request):
     page = request.GET.get('page', 1)
@@ -31,6 +26,12 @@ def index(request):
     data = r.json()
     if data["status"] != "ok":
         return HttpResponse("<h1>Request Failed</h1>")
+    context = parse_news_content(data, search)
+    # send the news feed to template in context
+    return render(request, 'lists/home.html', context=context)
+
+
+def parse_news_content(data, search):
     data = data["articles"]
     context = {
         "success": True,
@@ -46,19 +47,15 @@ def index(request):
             "image": temp_img if i["urlToImage"] is None else i["urlToImage"],
             "publishedat": i["publishedAt"]
         })
-    # send the news feed to template in context
-    return render(request, 'lists/home.html', context=context)
+    return context
 
 
 # return render(request, "lists/index.html", {"form": TodoForm()})
 
-def loadcontent(request):
+def load_content(request):
     try:
         page = request.GET.get('page', 1)
         search = request.GET.get('search', None)
-        # url = "https://newsapi.org/v2/everything?q={}&sortBy={}&page={}&apiKey={}".format(
-        #     "Technology","popularity",page,settings.APIKEY
-        # )
         if search is None or search == "top":
             url = "https://newsapi.org/v2/top-headlines?country={}&page={}&apiKey={}".format(
                 "us", page, settings.APIKEY
@@ -73,91 +70,7 @@ def loadcontent(request):
         data = r.json()
         if data["status"] != "ok":
             return JsonResponse({"success": False})
-        data = data["articles"]
-        context = {
-            "success": True,
-            "data": [],
-            "search": search
-        }
-        for i in data:
-            context["data"].append({
-                "title": i["title"],
-                "description": "" if i["description"] is None else i["description"],
-                "url": i["url"],
-                "image": temp_img if i["urlToImage"] is None else i["urlToImage"],
-                "publishedat": i["publishedAt"]
-            })
-
+        context = parse_news_content(data, search)
         return JsonResponse(context)
     except Exception as e:
         return JsonResponse({"success": False})
-
-
-def todolist(request, todolist_id):
-    todolist = get_object_or_404(TodoList, pk=todolist_id)
-    if request.method == "POST":
-        redirect("lists:add_todo", todolist_id=todolist_id)
-
-    return render(
-        request, "lists/todolist.html", {"todolist": todolist, "form": TodoForm()}
-    )
-
-
-def add_todo(request, todolist_id):
-    if request.method == "POST":
-        form = TodoForm(request.POST)
-        if form.is_valid():
-            user = request.user if request.user.is_authenticated else None
-            todo = Todo(
-                description=request.POST["description"],
-                todolist_id=todolist_id,
-                creator=user,
-            )
-            todo.save()
-            return redirect("lists:todolist", todolist_id=todolist_id)
-        else:
-            return render(request, "lists/todolist.html", {"form": form})
-
-    return redirect("lists:index")
-
-
-@login_required
-def overview(request):
-    if request.method == "POST":
-        return redirect("lists:add_todolist")
-    return render(request, "lists/overview.html", {"form": TodoListForm()})
-
-
-def new_todolist(request):
-    if request.method == "POST":
-        form = TodoForm(request.POST)
-        if form.is_valid():
-            # create default todolist
-            user = request.user if request.user.is_authenticated else None
-            todolist = TodoList(creator=user)
-            todolist.save()
-            todo = Todo(
-                description=request.POST["description"],
-                todolist_id=todolist.id,
-                creator=user,
-            )
-            todo.save()
-            return redirect("lists:todolist", todolist_id=todolist.id)
-        else:
-            return render(request, "lists/index.html", {"form": form})
-
-    return redirect("lists:index")
-
-
-def add_todolist(request):
-    if request.method == "POST":
-        form = TodoListForm(request.POST)
-        if form.is_valid():
-            user = request.user if request.user.is_authenticated else None
-            todolist = TodoList(title=request.POST["title"], creator=user)
-            todolist.save()
-            return redirect("lists:todolist", todolist_id=todolist.id)
-        else:
-            return render(request, "lists/overview.html", {"form": form})
-
-    return redirect("lists:index")

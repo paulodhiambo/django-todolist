@@ -15,15 +15,15 @@ spec:
         app: django-app
     spec:
       containers:
-      - name: django-app
-        image: paulodhiambo/django_dtodo:v2
-        imagePullPolicy: Always
-        resources:
-          requests:
-            memory: ".5Gi"
-            cpu: "500m"
-          limits:
-            memory: ".5Gi"
-            cpu: "500m"
-        ports:
-        - containerPort: 80
+        - name: django-app
+          image: paulodhiambo/django_dtodo:v2
+          imagePullPolicy: Always
+          resources:
+            requests:
+              memory: ".5Gi"
+              cpu: "500m"
+            limits:
+              memory: ".5Gi"
+              cpu: "500m"
+          ports:
+            - containerPort: 80
